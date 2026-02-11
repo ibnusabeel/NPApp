@@ -1,5 +1,6 @@
 import React from 'react';
 import { IProduct } from '@/types';
+import { getPriceCardColor } from '@/lib/colors';
 
 interface LabelProps {
     product: IProduct;
@@ -9,20 +10,18 @@ interface LabelProps {
 const Label: React.FC<LabelProps> = ({ product, scale = 1 }) => {
     const width = product.labelWidth || 10;
     const height = product.labelHeight || 2.5;
+    const isSinglePrice = product.prices.length === 1;
 
-    // Calculate dynamic font size for single-line header
-    // Base size 16px, shrink if name is long
+    // Calculate dynamic font size for header
     const nameLength = product.name.length;
-    let nameFontSize = 16;
-
-    if (nameLength > 25) nameFontSize = 14;
-    if (nameLength > 35) nameFontSize = 12;
-    if (nameLength > 45) nameFontSize = 11;
-    if (nameLength > 60) nameFontSize = 10;
+    let nameFontSize = 18;
+    if (nameLength > 25) nameFontSize = 16;
+    if (nameLength > 35) nameFontSize = 14;
+    if (nameLength > 45) nameFontSize = 12;
 
     return (
         <div
-            className="relative overflow-hidden bg-white flex flex-col border border-gray-200"
+            className="relative overflow-hidden bg-white flex flex-col border border-gray-300"
             style={{
                 width: `${width}cm`,
                 height: `${height}cm`,
@@ -31,59 +30,75 @@ const Label: React.FC<LabelProps> = ({ product, scale = 1 }) => {
                 fontFamily: "'IBM Plex Sans Thai Looped', sans-serif",
             }}
         >
-            {/* HEADER: Product Name (Single Line + Auto-Shrink) */}
+            {/* Header */}
             <div
-                className="flex items-center px-2 bg-orange-500 text-white overflow-hidden"
-                style={{ height: '32%', minHeight: '32%' }}
+                className="flex items-center px-3 bg-slate-800 text-white overflow-hidden shrink-0"
+                style={{ height: '30%' }}
             >
                 <h3
-                    className="font-bold leading-none w-full text-center whitespace-nowrap "
+                    className="font-bold leading-none w-full text-center whitespace-nowrap"
                     style={{ fontSize: `${nameFontSize}px` }}
                 >
                     {product.name}
                 </h3>
             </div>
 
-            {/* BODY: Prices & Info */}
             <div className="flex-1 flex flex-row min-h-0">
-                {/* Left: Code & Packing (25%) */}
+                {/* Info Column */}
                 <div
-                    className="flex flex-col justify-center px-1 bg-gray-50 border-r border-gray-200 py-1"
-                    style={{ width: '25%', minWidth: '25%' }}
+                    className="flex flex-col justify-center px-2 bg-gray-50 border-r border-gray-200"
+                    style={{ width: '30%', minWidth: '30%' }}
                 >
-                    <div className="text-gray-500 font-mono text-[9px] truncate text-center mb-0.5">
+                    <div className="text-gray-500 font-mono text-[10px] text-center mb-1 truncate">
                         {product.code}
                     </div>
-                    <div className="text-gray-800 text-[10px] font-medium text-center leading-tight line-clamp-2">
-                        ลังละ {product.packing} {product.unit || 'ชิ้น'}
+                    <div className="text-gray-900 text-[11px] font-semibold text-center leading-tight">
+                        {product.packing} {product.unit || 'ชิ้น'}
                     </div>
                 </div>
 
-                {/* Right: Prices (75%) */}
-                <div className="flex-1 px-3 flex flex-col justify-center min-w-0">
-                    <div
-                        className="grid gap-x-2 w-full"
-                        style={{
-                            gridTemplateColumns: product.prices.length > 6 ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)',
-                            gap: product.prices.length > 6 ? '1px 4px' : '1px 12px',
-                            alignContent: 'center',
-                        }}
-                    >
-                        {product.prices.slice(0, 9).map((p, i) => (
-                            <div
-                                key={i}
-                                className="flex justify-between items-baseline border-b border-gray-100 last:border-0"
-                                style={{ paddingBottom: '1px', minWidth: 0 }}
-                            >
-                                <span className={`text-gray-600 font-medium whitespace-nowrap truncate mr-1 ${product.prices.length > 6 ? 'text-[9px]' : 'text-[11px]'}`}>
-                                    {p.quantity} {p.unit || product.unit || 'ชิ้น'}
+                {/* Price Column */}
+                <div className="flex-1 p-1.5 flex flex-col justify-center min-w-0 bg-white">
+                    {isSinglePrice ? (
+                        // Single Price - Large Card
+                        <div className="h-full w-full flex items-center justify-center bg-orange-500 text-white rounded-lg shadow-sm border-2 border-orange-600 print:border-orange-600">
+                            <div className="text-center">
+                                <span className="block text-xs font-medium text-orange-100 mb-1">
+                                    ราคา / {product.prices[0].unit || product.unit || 'ชิ้น'}
                                 </span>
-                                <span className={`font-bold text-orange-600 whitespace-nowrap ${product.prices.length > 6 ? 'text-[11px]' : 'text-[13px]'}`}>
-                                    {p.price.toFixed(2)}
+                                <span className="block text-3xl font-bold leading-none tracking-tight">
+                                    {product.prices[0].price.toLocaleString()}
                                 </span>
                             </div>
-                        ))}
-                    </div>
+                        </div>
+                    ) : (
+                        // Multiple Prices - Grid
+                        <div
+                            className="grid h-full gap-1"
+                            style={{
+                                gridTemplateColumns: product.prices.length > 2 ? 'repeat(2, 1fr)' : '1fr',
+                                gridTemplateRows: product.prices.length > 4 ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)',
+                                alignContent: 'stretch',
+                            }}
+                        >
+                            {product.prices.slice(0, 6).map((p, i) => {
+                                const color = getPriceCardColor(i);
+                                return (
+                                    <div
+                                        key={i}
+                                        className={`${color.bg} ${color.text} rounded flex items-center justify-between px-2 border ${color.border}`}
+                                    >
+                                        <div className={`text-[10px] ${color.subtext} font-medium leading-none`}>
+                                            {p.quantity} {p.unit || product.unit || 'ชิ้น'}
+                                        </div>
+                                        <div className="text-sm font-bold leading-none">
+                                            {p.price.toLocaleString()}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

@@ -41,6 +41,33 @@ export default function ProductList({ initialProducts }: ProductListProps) {
     const [filterCategory, setFilterCategory] = useState<string>('');
     const [showFilters, setShowFilters] = useState(false);
 
+    // Print Logic
+    const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+    const [printQuantities, setPrintQuantities] = useState<Record<string, number>>({});
+
+    const handlePrintClick = () => {
+        const initialQuantities: Record<string, number> = {};
+        selectedProducts.forEach(id => {
+            initialQuantities[id] = 1;
+        });
+        setPrintQuantities(initialQuantities);
+        setIsPrintModalOpen(true);
+    };
+
+    const updatePrintQuantity = (id: string, delta: number) => {
+        setPrintQuantities(prev => ({
+            ...prev,
+            [id]: Math.max(1, (prev[id] || 1) + delta)
+        }));
+    };
+
+    const getPrintUrl = () => {
+        const query = Object.entries(printQuantities)
+            .map(([id, quantity]) => `${id}:${quantity}`)
+            .join(',');
+        return `/print?q=${query}`;
+    };
+
     // Filter and sort products
     const filteredProducts = useMemo(() => {
         let result = products.filter(p =>
@@ -251,12 +278,12 @@ export default function ProductList({ initialProducts }: ProductListProps) {
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Link
-                                href={`/print?ids=${Array.from(selectedProducts).join(',')}`}
+                            <button
+                                onClick={handlePrintClick}
                                 className="btn btn-primary gap-1.5 text-xs md:text-sm px-3 md:px-4"
                             >
                                 <Printer className="w-4 h-4" /> <span className="hidden md:inline">พิมพ์ป้าย</span>
-                            </Link>
+                            </button>
                             <button onClick={handleBatchDelete} className="btn btn-danger gap-1.5 text-xs md:text-sm px-3 md:px-4">
                                 <Trash2 className="w-4 h-4" /> <span className="hidden md:inline">ลบ</span>
                             </button>
@@ -472,6 +499,76 @@ export default function ProductList({ initialProducts }: ProductListProps) {
                                 onSuccess={closeForm}
                                 onCancel={() => setIsFormOpen(false)}
                             />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Print Settings Modal */}
+            {isPrintModalOpen && (
+                <div className="fixed inset-0 z-[60] overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-card w-full max-w-lg rounded-2xl shadow-2xl flex flex-col animate-slide-in overflow-hidden">
+                        <div className="flex justify-between items-center p-4 border-b border-border bg-card sticky top-0 z-10">
+                            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                                <Printer className="w-5 h-5 text-primary" />
+                                ตั้งค่าการพิมพ์
+                            </h2>
+                            <button
+                                onClick={() => setIsPrintModalOpen(false)}
+                                className="p-2 hover:bg-muted rounded-full transition-colors"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 bg-secondary/20 max-h-[60vh]">
+                            <div className="space-y-3">
+                                {Array.from(selectedProducts).map(id => {
+                                    const product = products.find(p => p._id === id);
+                                    if (!product) return null;
+                                    return (
+                                        <div key={id} className="bg-card p-3 rounded-lg border border-border flex items-center justify-between">
+                                            <div className="flex-1 min-w-0 mr-4">
+                                                <div className="font-bold truncate">{product.name}</div>
+                                                <div className="text-xs text-muted-foreground">{product.code}</div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <button
+                                                    onClick={() => updatePrintQuantity(id, -1)}
+                                                    className="w-8 h-8 rounded-full bg-secondary text-foreground hover:bg-muted flex items-center justify-center transition-colors"
+                                                >
+                                                    -
+                                                </button>
+                                                <span className="w-8 text-center font-bold text-lg">{printQuantities[id] || 1}</span>
+                                                <button
+                                                    onClick={() => updatePrintQuantity(id, 1)}
+                                                    className="w-8 h-8 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 flex items-center justify-center transition-colors shadow-sm"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="p-4 border-t border-border bg-card flex justify-end gap-3">
+                            <button
+                                onClick={() => setIsPrintModalOpen(false)}
+                                className="btn btn-secondary"
+                            >
+                                ยกเลิก
+                            </button>
+                            <Link
+                                href={getPrintUrl()}
+                                className="btn btn-primary gap-2"
+                                target="_blank"
+                                onClick={() => setIsPrintModalOpen(false)}
+                            >
+                                <Printer className="w-4 h-4" />
+                                พิมพ์ {Object.values(printQuantities).reduce((a, b) => a + b, 0)} ใบ
+                            </Link>
                         </div>
                     </div>
                 </div>
