@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { Calculator, RotateCcw, Plus, ShoppingCart, Printer, Trash2 } from 'lucide-react';
+import { Calculator, RotateCcw, RefreshCcw, History, Trash2 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 
 interface CalculationResult {
@@ -11,13 +11,12 @@ interface CalculationResult {
     markup: number;
 }
 
-interface CartItem {
+interface HistoryItem {
     id: string;
-    name: string;
+    timestamp: Date;
     cost: number;
     profitPercent: number;
     sellingPrice: number;
-    quantity: number;
 }
 
 function formatNumber(num: number): string {
@@ -30,9 +29,7 @@ function formatNumber(num: number): string {
 export default function CalculatorPage() {
     const [cost, setCost] = useState<string>('');
     const [profitPercent, setProfitPercent] = useState<string>('');
-    const [productName, setProductName] = useState<string>('');
-    const [quantity, setQuantity] = useState<string>('1');
-    const [cart, setCart] = useState<CartItem[]>([]);
+    const [history, setHistory] = useState<HistoryItem[]>([]);
     const [result, setResult] = useState<CalculationResult>({
         sellingPrice: 0,
         profitAmount: 0,
@@ -78,33 +75,33 @@ export default function CalculatorPage() {
     const resetCalculator = () => {
         setCost('');
         setProfitPercent('');
-        setProductName('');
-        setQuantity('1');
         setResult({ sellingPrice: 0, profitAmount: 0, grossMargin: 0, markup: 0 });
     };
 
-    const addToCart = () => {
-        if (!productName || result.sellingPrice <= 0) return;
+    const handleNewCalculation = () => {
+        if (result.sellingPrice <= 0) return;
 
-        const newItem: CartItem = {
+        const newItem: HistoryItem = {
             id: Date.now().toString(),
-            name: productName,
+            timestamp: new Date(),
             cost: parseFloat(cost) || 0,
             profitPercent: parseFloat(profitPercent) || 0,
             sellingPrice: result.sellingPrice,
-            quantity: parseInt(quantity) || 1,
         };
 
-        setCart([...cart, newItem]);
+        setHistory(prev => [newItem, ...prev]);
         resetCalculator();
     };
 
-    const removeFromCart = (id: string) => {
-        setCart(cart.filter(item => item.id !== id));
+    const deleteHistoryItem = (id: string) => {
+        setHistory(history.filter(item => item.id !== id));
     };
 
-    const cartTotal = cart.reduce((sum, item) => sum + item.sellingPrice * item.quantity, 0);
-    const cartProfit = cart.reduce((sum, item) => sum + (item.sellingPrice - item.cost) * item.quantity, 0);
+    const clearHistory = () => {
+        if (confirm('คุณต้องการลบประวัติทั้งหมดหรือไม่?')) {
+            setHistory([]);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-background flex flex-col md:flex-row">
@@ -134,18 +131,7 @@ export default function CalculatorPage() {
                             </h2>
 
                             <div className="space-y-6">
-                                <div>
-                                    <label className="block text-sm font-semibold text-foreground mb-2">
-                                        ชื่อสินค้า (ไม่บังคับ)
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="input h-12"
-                                        placeholder="เช่น ขวดแก้ว 500ml"
-                                        value={productName}
-                                        onChange={(e) => setProductName(e.target.value)}
-                                    />
-                                </div>
+
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                     <div>
@@ -209,114 +195,80 @@ export default function CalculatorPage() {
                                     </div>
                                 </div>
 
-                                {/* Quantity & Actions */}
-                                <div className="flex flex-col sm:flex-row gap-4 mt-4 pt-4 border-t border-border">
-                                    <div className="flex-1 sm:max-w-[120px]">
-                                        <label className="block text-xs font-bold uppercase text-muted-foreground mb-1.5">
-                                            จำนวน
-                                        </label>
-                                        <input
-                                            type="number"
-                                            className="input h-11 text-center font-medium"
-                                            min={1}
-                                            value={quantity}
-                                            onChange={(e) => setQuantity(e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="flex-1 flex gap-2 items-end">
-                                        <button
-                                            onClick={addToCart}
-                                            disabled={result.sellingPrice <= 0}
-                                            className="btn btn-primary h-11 flex-1 gap-2 shadow-lg shadow-primary/20 disabled:shadow-none disabled:opacity-50"
-                                        >
-                                            <Plus className="w-5 h-5" /> เพิ่มลงตะกร้า
-                                        </button>
-                                        <button
-                                            onClick={resetCalculator}
-                                            className="btn btn-secondary h-11 w-11 p-0 rounded-xl"
-                                        >
-                                            <RotateCcw className="w-5 h-5 text-muted-foreground" />
-                                        </button>
-                                    </div>
+                                {/* Actions */}
+                                <div className="mt-8 pt-4 border-t border-border">
+                                    <button
+                                        onClick={handleNewCalculation}
+                                        disabled={result.sellingPrice <= 0}
+                                        className="btn btn-primary h-12 w-full gap-2 shadow-lg shadow-primary/20 disabled:shadow-none disabled:opacity-50 text-lg"
+                                    >
+                                        <RefreshCcw className="w-5 h-5" /> คำนวณใหม่
+                                    </button>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Cart / Quotation */}
+                        {/* History */}
                         <div className="card p-6 md:p-8 flex flex-col h-full border-t-4 border-t-indigo-500">
                             <div className="flex items-center justify-between mb-6">
                                 <h2 className="font-bold text-xl flex items-center gap-2">
                                     <span className="bg-indigo-100 dark:bg-indigo-900/30 p-2 rounded-lg text-indigo-600 dark:text-indigo-400">
-                                        <ShoppingCart className="w-5 h-5" />
+                                        <History className="w-5 h-5" />
                                     </span>
-                                    รายการ ({cart.length})
+                                    ประวัติการคำนวณ ({history.length})
                                 </h2>
-                                {cart.length > 0 && (
-                                    <button className="btn btn-secondary text-xs gap-1.5 h-9 px-3">
-                                        <Printer className="w-3.5 h-3.5" /> ใบเสนอราคา
+                                {history.length > 0 && (
+                                    <button
+                                        onClick={clearHistory}
+                                        className="btn btn-secondary text-xs gap-1.5 h-9 px-3 text-red-500 hover:bg-red-50 hover:border-red-200"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" /> ล้างประวัติ
                                     </button>
                                 )}
                             </div>
 
-                            {cart.length === 0 ? (
+                            {history.length === 0 ? (
                                 <div className="flex-1 flex flex-col items-center justify-center text-center py-12 text-muted-foreground border-2 border-dashed border-border rounded-2xl bg-secondary/20">
                                     <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-                                        <ShoppingCart className="w-8 h-8 opacity-20" />
+                                        <History className="w-8 h-8 opacity-20" />
                                     </div>
-                                    <p className="font-medium">ตะกร้าว่างเปล่า</p>
-                                    <p className="text-sm mt-1">คำนวณราคาแล้วกด "เพิ่มลงตะกร้า"</p>
+                                    <p className="font-medium">ยังไม่มีประวัติการคำนวณ</p>
+                                    <p className="text-sm mt-1">กด "คำนวณใหม่" เพื่อบันทึกผลลัพธ์</p>
                                 </div>
                             ) : (
                                 <div className="flex-1 flex flex-col">
-                                    <div className="flex-1 overflow-y-auto -mx-2 px-2 space-y-3 max-h-[400px]">
-                                        {cart.map((item, index) => (
+                                    <div className="flex-1 overflow-y-auto -mx-2 px-2 space-y-3 max-h-[500px]">
+                                        {history.map((item, index) => (
                                             <div
                                                 key={item.id}
                                                 className="group flex items-start justify-between bg-white dark:bg-slate-800 border border-border p-4 rounded-xl shadow-sm hover:shadow-md transition-all"
                                             >
                                                 <div className="flex-1 min-w-0 pr-4">
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <span className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-xs font-bold text-muted-foreground">
-                                                            {index + 1}
+                                                        <span className="text-xs font-mono text-muted-foreground">
+                                                            {item.timestamp.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
                                                         </span>
-                                                        <div className="font-semibold text-foreground truncate">
-                                                            {item.name || 'สินค้าไม่มีชื่อ'}
-                                                        </div>
+                                                        <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+                                                            ทุน {formatNumber(item.cost)}
+                                                        </span>
+                                                        <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+                                                            กำไร {item.profitPercent}%
+                                                        </span>
                                                     </div>
-                                                    <div className="text-sm text-muted-foreground font-mono pl-8">
-                                                        ต้นทุน {formatNumber(item.cost)} → ขาย {formatNumber(item.sellingPrice)}
+                                                    <div className="font-bold text-lg text-foreground">
+                                                        {formatNumber(item.sellingPrice)} บาท
                                                     </div>
                                                 </div>
                                                 <div className="text-right flex flex-col items-end gap-1">
-                                                    <div className="font-bold text-lg text-primary">
-                                                        {formatNumber(item.sellingPrice * item.quantity)}
-                                                    </div>
-                                                    <div className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
-                                                        x {item.quantity} ชิ้น
-                                                    </div>
-
                                                     <button
-                                                        onClick={() => removeFromCart(item.id)}
-                                                        className="text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 px-2 py-1 rounded transition-colors opacity-0 group-hover:opacity-100 mt-1 flex items-center gap-1"
+                                                        onClick={() => deleteHistoryItem(item.id)}
+                                                        className="text-muted-foreground hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-colors"
                                                     >
-                                                        <Trash2 className="w-3 h-3" /> ลบ
+                                                        <Trash2 className="w-4 h-4" />
                                                     </button>
                                                 </div>
                                             </div>
                                         ))}
-                                    </div>
-
-                                    {/* Summary */}
-                                    <div className="bg-secondary/30 border border-border rounded-2xl p-5 mt-6 space-y-3">
-                                        <div className="flex justify-between items-center text-lg">
-                                            <span className="text-muted-foreground">รวมทั้งหมด</span>
-                                            <span className="font-bold text-2xl text-foreground">{formatNumber(cartTotal)} <span className="text-base font-normal">บาท</span></span>
-                                        </div>
-                                        <div className="h-px bg-border my-2" />
-                                        <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400">
-                                            <span className="text-sm font-medium">กำไรโดยประมาณ</span>
-                                            <span className="font-bold text-lg">+{formatNumber(cartProfit)} บาท</span>
-                                        </div>
                                     </div>
                                 </div>
                             )}

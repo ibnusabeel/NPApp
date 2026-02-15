@@ -19,9 +19,11 @@ import {
     Copy,
     MoreHorizontal,
     ChevronDown,
-    Check
+    Check,
+    Download
 } from 'lucide-react';
 import Link from 'next/link';
+import { exportToCSV } from '@/lib/export';
 
 interface ProductListProps {
     initialProducts: IProduct[];
@@ -198,6 +200,16 @@ export default function ProductList({ initialProducts }: ProductListProps) {
                                     <Filter className="w-4 h-4" />
                                     <span className="hidden lg:inline">ตัวกรอง</span>
                                 </button>
+
+                                <button
+                                    onClick={() => exportToCSV(filteredProducts, `products-${new Date().toISOString().split('T')[0]}.csv`)}
+                                    className="btn btn-secondary gap-2"
+                                    title="Export CSV"
+                                >
+                                    <Download className="w-4 h-4" />
+                                    <span className="hidden lg:inline">Export</span>
+                                </button>
+
 
                                 <div className="flex items-center bg-secondary p-1 rounded-xl border border-border">
                                     <button
