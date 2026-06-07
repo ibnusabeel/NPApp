@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
     Tag,
     Home,
@@ -15,8 +15,9 @@ import {
     Search,
     Calculator,
     Menu,
-    X
-} from 'lucide-react';
+    X,
+    Banknote,
+} from "lucide-react";
 
 interface SidebarProps {
     onNewProduct?: () => void;
@@ -32,12 +33,14 @@ export default function Sidebar({ onNewProduct }: SidebarProps) {
     useEffect(() => {
         setMounted(true);
         // Check for saved theme preference or system preference
-        const savedTheme = localStorage.getItem('theme');
-        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const savedTheme = localStorage.getItem("theme");
+        const systemDark = window.matchMedia(
+            "(prefers-color-scheme: dark)",
+        ).matches;
 
-        if (savedTheme === 'dark' || (!savedTheme && systemDark)) {
+        if (savedTheme === "dark" || (!savedTheme && systemDark)) {
             setIsDark(true);
-            document.documentElement.classList.add('dark');
+            document.documentElement.classList.add("dark");
         }
     }, []);
 
@@ -50,20 +53,24 @@ export default function Sidebar({ onNewProduct }: SidebarProps) {
         const newIsDark = !isDark;
         setIsDark(newIsDark);
         if (newIsDark) {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('theme', 'dark');
+            document.documentElement.classList.add("dark");
+            localStorage.setItem("theme", "dark");
         } else {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
+            document.documentElement.classList.remove("dark");
+            localStorage.setItem("theme", "light");
         }
     };
 
     const navItems = [
-        { href: '/', icon: Home, label: 'หน้าหลัก' },
-        { href: '/calculator', icon: Calculator, label: 'คำนวณราคา' },
-        { href: '/categories', icon: FolderOpen, label: 'หมวดหมู่' },
-        { href: '/print', icon: Printer, label: 'พิมพ์ป้ายราคา' },
-        { href: '/settings', icon: Settings, label: 'ตั้งค่า' },
+        { href: "/", icon: Home, label: "หน้าหลัก" },
+        { href: "/calculator", icon: Calculator, label: "คำนวณราคา" },
+        { href: "/categories", icon: FolderOpen, label: "หมวดหมู่" },
+        { href: "/print", icon: Printer, label: "พิมพ์ป้ายราคา" },
+        { href: "/slipcheck", icon: Banknote, label: "สลิป & การเงิน" },
+    ];
+
+    const systemItems = [
+        { href: "/settings", icon: Settings, label: "ตั้งค่า" },
     ];
 
     return (
@@ -73,7 +80,11 @@ export default function Sidebar({ onNewProduct }: SidebarProps) {
                 onClick={() => setIsOpen(!isOpen)}
                 className="fixed top-4 left-4 z-50 p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-xl shadow-sm border border-border md:hidden"
             >
-                {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                {isOpen ? (
+                    <X className="w-6 h-6" />
+                ) : (
+                    <Menu className="w-6 h-6" />
+                )}
             </button>
 
             {/* Backdrop for Mobile */}
@@ -89,7 +100,7 @@ export default function Sidebar({ onNewProduct }: SidebarProps) {
                 className={`
           fixed top-0 left-0 z-40 h-screen w-64 bg-card border-r border-border flex flex-col transition-transform duration-300 ease-in-out
           md:translate-x-0
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+          ${isOpen ? "translate-x-0" : "-translate-x-full"}
         `}
             >
                 {/* Logo */}
@@ -143,20 +154,55 @@ export default function Sidebar({ onNewProduct }: SidebarProps) {
                         เมนูหลัก
                     </div>
                     {navItems.map((item) => {
-                        const isActive = pathname === item.href;
+                        const isActive =
+                            pathname === item.href ||
+                            (item.href !== "/" &&
+                                pathname.startsWith(item.href));
                         return (
                             <Link
                                 key={item.href}
                                 href={item.href}
                                 className={`
                   flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
-                  ${isActive
-                                        ? 'bg-primary/10 text-primary shadow-sm'
-                                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground hover:pl-4'
-                                    }
+                  ${
+                      isActive
+                          ? "bg-primary/10 text-primary shadow-sm"
+                          : "text-muted-foreground hover:bg-secondary hover:text-foreground hover:pl-4"
+                  }
                 `}
                             >
-                                <item.icon className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-slate-400'}`} />
+                                <item.icon
+                                    className={`w-5 h-5 ${isActive ? "text-primary" : "text-slate-400"}`}
+                                />
+                                {item.label}
+                            </Link>
+                        );
+                    })}
+
+                    <div className="text-xs font-semibold text-muted-foreground mb-2 px-3 mt-4 uppercase tracking-wider">
+                        ตั้งค่า
+                    </div>
+                    {systemItems.map((item) => {
+                        const isActive =
+                            pathname === item.href ||
+                            (item.href !== "/" &&
+                                pathname.startsWith(item.href));
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={`
+                  flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
+                  ${
+                      isActive
+                          ? "bg-primary/10 text-primary shadow-sm"
+                          : "text-muted-foreground hover:bg-secondary hover:text-foreground hover:pl-4"
+                  }
+                `}
+                            >
+                                <item.icon
+                                    className={`w-5 h-5 ${isActive ? "text-primary" : "text-slate-400"}`}
+                                />
                                 {item.label}
                             </Link>
                         );
@@ -171,14 +217,26 @@ export default function Sidebar({ onNewProduct }: SidebarProps) {
                     >
                         <span className="flex items-center gap-3">
                             {mounted ? (
-                                isDark ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-indigo-500" />
+                                isDark ? (
+                                    <Sun className="w-4 h-4 text-amber-500" />
+                                ) : (
+                                    <Moon className="w-4 h-4 text-indigo-500" />
+                                )
                             ) : (
                                 <Moon className="w-4 h-4" />
                             )}
-                            {mounted ? (isDark ? 'โหมดสว่าง' : 'โหมดมืด') : 'โหมดมืด'}
+                            {mounted
+                                ? isDark
+                                    ? "โหมดสว่าง"
+                                    : "โหมดมืด"
+                                : "โหมดมืด"}
                         </span>
-                        <div className={`w-8 h-4 rounded-full relative transition-colors ${isDark ? 'bg-slate-700' : 'bg-slate-300'}`}>
-                            <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${isDark ? 'translate-x-4' : 'translate-x-0'}`} />
+                        <div
+                            className={`w-8 h-4 rounded-full relative transition-colors ${isDark ? "bg-slate-700" : "bg-slate-300"}`}
+                        >
+                            <div
+                                className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${isDark ? "translate-x-4" : "translate-x-0"}`}
+                            />
                         </div>
                     </button>
                 </div>
