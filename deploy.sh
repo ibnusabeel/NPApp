@@ -5,23 +5,40 @@ set -e
 #  NPApp Deploy Script
 #  /www/wwwroot/npapp
 # ============================================
+#
+#  Usage:
+#    ./deploy.sh           deploy (build + restart only)
+#    ./deploy.sh --pull     git pull + build + restart
+#    ./deploy.sh main       git pull main branch + build + restart
+# ============================================
 
 APP_DIR="/www/wwwroot/npapp"
 PM2_USER="www"
-BRANCH="${1:-main}"
+DO_PULL=false
+
+# Parse args
+if [ "$1" = "--pull" ]; then
+    DO_PULL=true
+elif [ -n "$1" ]; then
+    DO_PULL=true
+    BRANCH="$1"
+fi
 
 echo "🚀 Deploying NPApp..."
-echo "   branch : $BRANCH"
 echo "   dir    : $APP_DIR"
 echo ""
 
 cd "$APP_DIR"
 
-# 1. Pull latest code
-echo "📦 git pull origin $BRANCH..."
-sudo -u "$PM2_USER" git fetch origin
-sudo -u "$PM2_USER" git reset --hard "origin/$BRANCH"
-echo ""
+# 1. Git pull (optional)
+if [ "$DO_PULL" = true ]; then
+    echo "📦 git pull origin ${BRANCH:-main}..."
+    sudo -u "$PM2_USER" git fetch origin
+    sudo -u "$PM2_USER" git reset --hard "origin/${BRANCH:-main}" || {
+        echo "⚠️  Git pull failed — continuing with local code"
+    }
+    echo ""
+fi
 
 # 2. Install dependencies
 echo "📦 npm install..."
